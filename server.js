@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
-const serverPort = 80;
+const serverPort = 5000;
 client=require('./config/db.js')
 
 client.connect(err => {
@@ -247,7 +247,7 @@ app.get('/', ()=> {
     return 'Server is running (:'
 })
 // 서버 시작
-app.listen(serverPort, () => {
+app.listen(process.env.PORT || serverPort, () => {
     console.log(`Server is running on port ${serverPort}`);
 });
 app.use((err, req, res, next) => {
