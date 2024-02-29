@@ -243,8 +243,8 @@ app.post('/findPathServer', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
-app.get('/', ()=> {
-    return 'Server is running (:'
+app.get('/', (req,res)=> {
+    res.status(200).send('Server is running (:');
 })
 // 서버 시작
 app.listen(process.env.PORT || serverPort, () => {
