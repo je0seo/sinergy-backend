@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
-const serverPort = 5000;
+const serverPort = 80;
 client=require('./config/db.js')
 
 client.connect(err => {
@@ -243,6 +243,9 @@ app.post('/findPathServer', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
+app.get('/', ()=> {
+    return 'Server is running (:'
+})
 // 서버 시작
 app.listen(serverPort, () => {
     console.log(`Server is running on port ${serverPort}`);
