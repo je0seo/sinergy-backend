@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
 const serverPort = 5000;
+const NODE_Frontend_URL = 'http://localhost:3000'
 client=require('./config/db.js')
 
 client.connect(err => {
@@ -12,7 +13,7 @@ client.connect(err => {
         console.log('Connect to db done!')
     }
 })
-app.use(cors({origin: 'http://localhost:3000'})); // 클라이언트 주소를 허용
+app.use(cors({origin: NODE_Frontend_URL})); // 클라이언트 주소를 허용
 app.use(bodyParser.json());
 app.use(express.json());
 async function str2id(userReq1) {
@@ -71,7 +72,7 @@ async function findPathAsync(requestData) {
   INNER JOIN "node" AS end_node ON "link".node2 = end_node.node_id
 `;
         if (userReq1.features.unpaved) {
-            createTempTableQuery += ' WHERE link.link_att != 4'
+            createTempTableQuery += ' Where link.link_att != 4 '
             if (userReq1.features.stairs) {
                 createTempTableQuery += ' AND link.link_att != 5'
                 if (userReq1.features.slope) {
