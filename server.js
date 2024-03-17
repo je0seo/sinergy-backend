@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
 const serverPort = 5000;
-const NODE_Frontend_URL = 'http://localhost:3000'
+const NODE_Frontend_URL = 'https://je0seo.github.io/'
 client=require('./config/db.js')
 
 client.connect(err => {
