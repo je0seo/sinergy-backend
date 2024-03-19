@@ -15,6 +15,8 @@ client.connect(err => {
 app.use(cors({origin: 'http://localhost:3000'})); // 클라이언트 주소를 허용
 app.use(bodyParser.json());
 app.use(express.json());
+
+//건물명을 아이디로 변환해주는 함수
 async function str2id(userReq1) {
     try {
         let AllPoints = [];
@@ -44,6 +46,7 @@ async function str2id(userReq1) {
         throw error;
     }
 }
+
 function createVariations(arrays, currentIndex, currentVariation, result) {
     if (currentIndex === arrays.length) {
         result.push([...currentVariation]);
@@ -54,10 +57,11 @@ function createVariations(arrays, currentIndex, currentVariation, result) {
         createVariations(arrays, currentIndex + 1, currentVariation, result);
     }
 }
+
 async function findPathAsync(requestData) {
     try {
-        const userReq1 = requestData;
-        const userReqNum = await str2id(userReq1);
+        const userReq1 = requestData; //살려야하는 부분
+        const userReqNum = await str2id(userReq1); //
         var createTempTableQuery = `
   CREATE TEMP TABLE temp AS
   SELECT
@@ -70,7 +74,7 @@ async function findPathAsync(requestData) {
   INNER JOIN "node" AS start_node ON "link".node1 = start_node.node_id
   INNER JOIN "node" AS end_node ON "link".node2 = end_node.node_id
 `;
-        if (userReq1.features.unpaved) {
+        if (userReq1.features.unpaved) { //unpaved - true
             createTempTableQuery += ' WHERE link.link_att != 4'
             if (userReq1.features.stairs) {
                 createTempTableQuery += ' AND link.link_att != 5'
@@ -98,7 +102,7 @@ async function findPathAsync(requestData) {
                         }
                     }
                 }
-            } // stairs: false 일 때
+            } // stairs: false 일 때 - 산길 무, 계단 유
             else {
                 if (userReq1.features.slope) {
                     createTempTableQuery += ' AND link.grad_deg <= 3.18'
@@ -148,7 +152,7 @@ async function findPathAsync(requestData) {
                         }
                     }
                 }
-            } // stairs: false 일 때
+            } // stairs: false 일 때 - 산길 유, 계단 유
             else {
                 if (userReq1.features.slope) {
                     createTempTableQuery += ' WHERE link.grad_deg <= 3.18'
