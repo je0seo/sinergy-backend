@@ -200,7 +200,13 @@ async function findPathAsync(requestData) {
         throw error;
     }
 }
-
+async function findBuildingAsync(keyword) {
+    const queryString = `SELECT name, bg_name, type
+                         WHERE bg_name = '${keyword}'
+                         FROM poi_point`;
+    const queryResult = await client.query(queryString);
+    return queryResult;
+}
 
 
 app.post('/findPathServer', async (req, res) => {
@@ -215,6 +221,19 @@ app.post('/findPathServer', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
+app.post('/findBuildingServer', async (req, res) => {
+    try {
+        const request = req.body; // 클라이언트에서 받은 requestData
+        const result = await findBuildingAsync(request);
+        // 결과를 클라이언트에게 응답
+        res.json(result);
+    } catch (error) {
+        // 오류 처리
+        console.error('Error during POST request:', error);
+        res.status(500).json({error: 'Internal Server Error'});
+    }
+});
+
 // 서버 시작
 app.listen(serverPort, () => {
     console.log(`Server is running on port ${serverPort}`);
