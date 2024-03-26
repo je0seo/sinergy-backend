@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
+const {continueSession} = require("pg/lib/crypto/sasl");
 const serverPort = 5000;
-const NODE_Frontend_URL = 'https://je0seo.github.io'
+const NODE_Frontend_URL = 'http://localhost:3000'
 client=require('./config/db.js')
 
 client.connect(err => {
@@ -16,12 +17,15 @@ client.connect(err => {
 app.use(cors({origin: NODE_Frontend_URL})); // 클라이언트 주소를 허용
 app.use(bodyParser.json());
 app.use(express.json());
+
+//건물명을 아이디로 변환해주는 함수
 async function str2id(userReq1) {
     try {
         let AllPoints = [];
-        var str2idQuery = 'SELECT node_id from "node" WHERE  "node"."bulid_name" = $1';
+        var str2idQuery = 'SELECT node_id from "node" WHERE  "node".build_name = $1';
         const startResult = await client.query(str2idQuery, [userReq1.start]);
         const endResult = await client.query(str2idQuery, [userReq1.end]);
+
         const start = startResult.rows.map(row => Number(row.node_id));
         const end = endResult.rows.map(row => Number(row.node_id));
         const stopovers = userReq1.stopovers || []; //falsy" 값(예: undefined, null, false, 0, NaN, "")일 경우 ([]) 반환.만약 userReq1.stopovers가 비어있지 않다면, 그 값을 그대로 사용
@@ -41,10 +45,11 @@ async function str2id(userReq1) {
         return AllPoints;
     } catch (error) {
         console.error('str2id 함수 오류:', error);
-        alert("입력한 장소가 존재하지 않습니다.새로고침하세요.");
+        //alert("입력한 장소가 존재하지 않습니다.새로고침하세요.");
         throw error;
     }
 }
+
 function createVariations(arrays, currentIndex, currentVariation, result) {
     if (currentIndex === arrays.length) {
         result.push([...currentVariation]);
@@ -55,132 +60,43 @@ function createVariations(arrays, currentIndex, currentVariation, result) {
         createVariations(arrays, currentIndex + 1, currentVariation, result);
     }
 }
+
+function generateCaseCondition(userReq) {
+    let conditions = [];
+
+    if (userReq.features.bol) { //볼라드
+        conditions.push("start_node_att = 1 or end_node_att = 1");
+    }
+    if (userReq.features.unpaved) { //비포장
+        conditions.push("link_att = 4");
+    }
+    if (userReq.features.stairs) { //계단
+        conditions.push("link_att = 5");
+    }
+    if (userReq.features.slope) { //경사
+        conditions.push("grad_deg >= 3.18");
+    }
+    if (userReq.features.bump) { //도로턱
+        conditions.push("start_bump_hei >= 2 or end_bump_hei >= 2");
+    }
+
+    let caseCondition = conditions.length > 0
+        ? `CASE WHEN ${conditions.join(" OR ")} THEN 10000 ELSE slopel END as cost`
+        : "slopel as cost";
+
+    return caseCondition;
+}
+
+
 async function findPathAsync(requestData) {
     try {
-        const userReq1 = requestData;
-        const userReqNum = await str2id(userReq1);
-        var createTempTableQuery = `
-  CREATE TEMP TABLE temp AS
-  SELECT
-    id, link_att, grad_deg, length, node1, node2, slopel,
-    start_node.node_id as start_node_id, end_node.node_id as end_node_id,
-    start_node.node_att as start_node_att, end_node.node_att as end_node_att,
-    start_node.bol_width as start_bol_width, end_node.bol_width as end_bol_width,
-    start_node.bump_hei as start_bump_hei, end_node.bump_hei as end_bump_hei
-  FROM "link" AS link
-  INNER JOIN "node" AS start_node ON "link".node1 = start_node.node_id
-  INNER JOIN "node" AS end_node ON "link".node2 = end_node.node_id
-`;
-        if (userReq1.features.unpaved) {
-            createTempTableQuery += ' Where link.link_att != 4 '
-            if (userReq1.features.stairs) {
-                createTempTableQuery += ' AND link.link_att != 5'
-                if (userReq1.features.slope) {
-                    createTempTableQuery += ' AND link.grad_deg <= 3.18'
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else { //도로턱 제외 안 함
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    }
-                } else {
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else {
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    }
-                }
-            } // stairs: false 일 때
-            else {
-                if (userReq1.features.slope) {
-                    createTempTableQuery += ' AND link.grad_deg <= 3.18'
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else if (userReq1.features.bol) {
-                        createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                    }
-                } else {
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else if (userReq1.features.bol) {
-                        createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                    }
-                }
-            }
-        } else {
-            if (userReq1.features.stairs) {
-                createTempTableQuery += ' WHERE link.link_att != 5'
-                if (userReq1.features.slope) {
-                    createTempTableQuery += ' AND link.grad_deg <= 3.18'
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else { //도로턱 제외 안 함
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    }
-                } else {
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else {
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    }
-                }
-            } // stairs: false 일 때
-            else {
-                if (userReq1.features.slope) {
-                    createTempTableQuery += ' WHERE link.grad_deg <= 3.18'
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' AND start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else if (userReq1.features.bol) {
-                        createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                    }
-                } else {
-                    if (userReq1.features.bump) {
-                        createTempTableQuery += ' WHERE start_node.bump_hei <= 2 AND end_node.bump_hei <= 2'
-                        if (userReq1.features.bol) {
-                            createTempTableQuery += ' AND start_node.node_att != 1 AND end_node.node_att != 1'
-                        }
-                    } else if (userReq1.features.bol) {
-                        createTempTableQuery += ' WHERE start_node.node_att != 1 AND end_node.node_att != 1'
-                    }
-                }
-            }
-        }
+        const userReq1 = requestData; //살려야하는 부분
+        const userReqNum = await str2id(userReq1); //
+        const costCondition = generateCaseCondition(userReq1);
+
+
         try {
-            try{
-                await client.query(createTempTableQuery);
-            } catch (err)
-            {
-                await client.query('DROP TABLE temp');
-                await client.query(createTempTableQuery);
-            }
+
             const AllPointsPath = [];
             createVariations(userReqNum, 0, [], AllPointsPath);
             //console.log('AllPointsPath:',AllPointsPath);
@@ -191,14 +107,44 @@ async function findPathAsync(requestData) {
                     const sourceNode = AllPointsPath[j][i];
                     const targetNode = AllPointsPath[j][i + 1];
                     try {
-                        const queryresult = await client.query(`
-                            SELECT pd.*, n.node_att, n.bol_width, n.bump_hei, l.link_att, l.grad_deg, n.node_geom, l.link_geom
-                            FROM pgr_dijkstra(
-                                         'SELECT id, node1 as source, node2 as target, slopel as cost FROM "temp" as edges',
-                                         ${sourceNode}, ${targetNode}, false
-                                 ) as pd
-                            LEFT JOIN link as l ON pd.edge = l.id
-                            JOIN node as n ON pd.node = n.node_id
+                        const queryresult = await client.query(`SELECT pd.seq,
+                                           pd.path_seq,
+                                           pd.node,
+                                           pd.edge,
+                                           pd.cost,
+                                           pd.agg_cost,
+                                           source_id,
+                                           target_id,
+                                           pd.end_vid,
+                                           n.node_att,
+                                           n.bol_width,
+                                           n.bump_hei,
+                                           l.link_att,
+                                           l.slopel,
+                                           l.grad_deg,
+                                           ST_AsText(n.node_geom) as node_geom,
+                                           ST_AsText(l.link_geom) as link_geom
+
+                                    FROM (
+                                        SELECT *,
+                                                 (ARRAY[${sourceNode}])[rn] as source_id,
+                                                 (ARRAY[${targetNode}])[cn] as target_id
+                                        FROM
+                                            pgr_dijkstra
+                                            (
+                                                'SELECT id, node1 as source, node2 as target, ${costCondition}
+                                                FROM link_with_node',
+                                                ARRAY[${sourceNode}], ARRAY[${targetNode}], false
+                                            ) as pd,
+                                            generate_series(1, array_length(ARRAY[${sourceNode}], 1)) as rn,
+                                            generate_series(1, array_length(ARRAY[${targetNode}], 1)) as cn
+                                            WHERE
+                                                pd.start_vid = (ARRAY[${sourceNode}])[rn]
+                                            AND
+                                                pd.end_vid = (ARRAY[${targetNode}])[cn]
+                                        ) as pd
+                                        LEFT JOIN link as l ON pd.edge = l.id
+                                        JOIN node as n ON pd.end_vid = n.node_id
                         `);
                         AllPaths[j][i] = queryresult.rows
                     } catch (error) {
@@ -221,7 +167,13 @@ async function findPathAsync(requestData) {
             const minAggCostIndex = sumAggCosts.indexOf(minAggCost);
             let shortestPath = AllPaths[minAggCostIndex];
             console.log(shortestPath);
+            if ( minAggCost >= 10000) {
+                // 유효하지 않은 입력에 대한 처리, 예: 경로 데이터나 totalDistance 값을 null로 설정
+                return { shortestPath: 0, minAggCost: 0 };
+            }
+
             return {shortestPath, minAggCost};
+
         } catch (error) {
             console.error('임시 테이블 생성 중 오류:', error);
             throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
@@ -244,6 +196,53 @@ app.post('/findPathServer', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
+async function ShowReqAsync(requestDatatype) {
+    try {
+        let Id4ShowQuery = '';
+        if (requestDatatype.Req === 'facilities') {
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE node_att = 8';
+        }
+        else if (requestDatatype.Req === 'unpaved') {
+            Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
+        }
+        else if (requestDatatype.Req === 'stairs') {
+            Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 5';
+        }
+        else if (requestDatatype.Req === 'slope') {
+            Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18';
+        }
+        else if (requestDatatype.Req === 'bump') {
+            Id4ShowQuery ='SELECT node_id FROM "node" WHERE node_att = 3';
+        }
+        else if (requestDatatype.Req === 'bol') {
+            Id4ShowQuery ='SELECT node_id FROM "node" WHERE node_att = 1';
+        }
+        const queryResults = await client.query(Id4ShowQuery);
+        const A = queryResults.rows;
+        let resultIds;
+        if (requestDatatype.Req === 'facilities' || requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
+            resultIds = A.map(item => Number(item.node_id));
+        } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
+            resultIds = A.map(item => Number(item.id));
+        }
+        return resultIds;
+    } catch (error) {
+        console.error('Error in ShowReqAsync:', error);
+        throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
+    }
+}
+
+app.post('/ShowReq', async (req, res) => {
+    try {
+        const Ids = await ShowReqAsync(req.body);
+        res.json({ Ids }); // 클라이언트에게 편의시설/장애물종류별 ID 배열 전송
+    } catch (error) {
+        console.error('Error during POST request:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 app.get('/', (req,res)=> {
     res.status(200).send('Server is running (:');
 })
@@ -255,3 +254,4 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something went wrong!');
 });
+
