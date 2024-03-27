@@ -3,7 +3,7 @@ const path = require('path');
 const { Client } = require('pg');
 
 // 'DigiCertGlobalRootCA.crt.pem' 파일의 경로
-const filePath = '/Users/je_0seo/Desktop/gp4react/public/DigiCertGlobalRootCA.crt.pem';
+const filePath = './config/DigiCertGlobalRootCA.crt.pem';
 
 let fileContents;
 
