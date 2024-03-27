@@ -2,7 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
+const {continueSession} = require("pg/lib/crypto/sasl");
 const serverPort = 5000;
+const NODE_Frontend_URL = 'http://localhost:3000'
 client=require('./config/db.js')
 
 client.connect(err => {
@@ -12,7 +14,7 @@ client.connect(err => {
         console.log('Connect to db done!')
     }
 })
-app.use(cors({origin: 'http://localhost:3000'})); // 클라이언트 주소를 허용
+app.use(cors({origin: NODE_Frontend_URL})); // 클라이언트 주소를 허용
 app.use(bodyParser.json());
 app.use(express.json());
 
@@ -20,7 +22,7 @@ app.use(express.json());
 async function str2id(userReq1) {
     try {
         let AllPoints = [];
-        var str2idQuery = 'SELECT node_id from "node" WHERE  "node"."bulid_name" = $1';
+        var str2idQuery = 'SELECT node_id from "node" WHERE  "node".build_name = $1';
         const startResult = await client.query(str2idQuery, [userReq1.start]);
         const endResult = await client.query(str2idQuery, [userReq1.end]);
 
@@ -122,7 +124,7 @@ async function findPathAsync(requestData) {
                                            l.grad_deg,
                                            ST_AsText(n.node_geom) as node_geom,
                                            ST_AsText(l.link_geom) as link_geom
-                                    
+
                                     FROM (
                                         SELECT *,
                                                  (ARRAY[${sourceNode}])[rn] as source_id,
@@ -133,8 +135,8 @@ async function findPathAsync(requestData) {
                                                 'SELECT id, node1 as source, node2 as target, ${costCondition}
                                                 FROM link_with_node',
                                                 ARRAY[${sourceNode}], ARRAY[${targetNode}], false
-                                            ) as pd, 
-                                            generate_series(1, array_length(ARRAY[${sourceNode}], 1)) as rn, 
+                                            ) as pd,
+                                            generate_series(1, array_length(ARRAY[${sourceNode}], 1)) as rn,
                                             generate_series(1, array_length(ARRAY[${targetNode}], 1)) as cn
                                             WHERE
                                                 pd.start_vid = (ARRAY[${sourceNode}])[rn]
@@ -194,6 +196,56 @@ app.post('/findPathServer', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
+async function ShowReqAsync(requestDatatype) {
+    try {
+        let Id4ShowQuery = '';
+        if (requestDatatype.Req === 'facilities') {
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE node_att = 8';
+        }
+        else if (requestDatatype.Req === 'unpaved') {
+            Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
+        }
+        else if (requestDatatype.Req === 'stairs') {
+            Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 5';
+        }
+        else if (requestDatatype.Req === 'slope') {
+            Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18';
+        }
+        else if (requestDatatype.Req === 'bump') {
+            Id4ShowQuery ='SELECT node_id FROM "node" WHERE node_att = 3';
+        }
+        else if (requestDatatype.Req === 'bol') {
+            Id4ShowQuery ='SELECT node_id FROM "node" WHERE node_att = 1';
+        }
+        const queryResults = await client.query(Id4ShowQuery);
+        const A = queryResults.rows;
+        let resultIds;
+        if (requestDatatype.Req === 'facilities' || requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
+            resultIds = A.map(item => Number(item.node_id));
+        } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
+            resultIds = A.map(item => Number(item.id));
+        }
+        return resultIds;
+    } catch (error) {
+        console.error('Error in ShowReqAsync:', error);
+        throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
+    }
+}
+
+app.post('/ShowReq', async (req, res) => {
+    try {
+        const Ids = await ShowReqAsync(req.body);
+        res.json({ Ids }); // 클라이언트에게 편의시설/장애물종류별 ID 배열 전송
+    } catch (error) {
+        console.error('Error during POST request:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+app.get('/', (req,res)=> {
+    res.status(200).send('Server is running (:');
+})
 // 서버 시작
 app.listen(serverPort, () => {
     console.log(`Server is running on port ${serverPort}`);
