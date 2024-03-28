@@ -242,6 +242,25 @@ app.post('/ShowReq', async (req, res) => {
     }
 });
 
+async function GetBuildingInfoAsync(keyword) {
+    const queryString = `SELECT b.bd_id, p.bg_name, p.type, b.summary, b.image_url, b.total_floor, b.lounge_count
+                         FROM bd_info as b
+                         INNER JOIN poi_point as p
+                         ON b.bg_name = p.bg_name
+                         WHERE p.bg_name = '${keyword}'`;
+    const queryResult = await client.query(queryString);
+    return queryResult;
+}
+
+app.post('/showBuildingInfo', async (req, res) => {
+    try {
+        const bgInfo = await findBuildingAsync(req.body);
+        res.json(bgInfo);
+    } catch (error) {
+        console.error('Error during POST request:', error);
+        res.status(500).json({error: 'Internal Server Error'});
+    }
+});
 
 app.get('/', (req,res)=> {
     res.status(200).send('Server is running (:');
