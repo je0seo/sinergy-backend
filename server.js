@@ -25,7 +25,6 @@ async function str2id(userReq1) {
         var str2idQuery = 'SELECT node_id from "node" WHERE  "node".bulid_name = $1';
         const startResult = await client.query(str2idQuery, [userReq1.start]);
         const endResult = await client.query(str2idQuery, [userReq1.end]);
-
         const start = startResult.rows.map(row => Number(row.node_id));
         const end = endResult.rows.map(row => Number(row.node_id));
         const stopovers = userReq1.stopovers || []; //falsy" 값(예: undefined, null, false, 0, NaN, "")일 경우 ([]) 반환.만약 userReq1.stopovers가 비어있지 않다면, 그 값을 그대로 사용
@@ -38,10 +37,11 @@ async function str2id(userReq1) {
             }
             AllPoints = [start, ...stopovers, end];
         }
-        //console.log('start:',start);
-        //console.log('end:',end);
-        //console.log('stopovers:',stopovers);
-        //console.log('AllPoints:',AllPoints);
+        if (start.length === 0) {
+            return [0];
+        } else if (end.length === 0) {
+            return [0,0];
+        }
         return AllPoints;
     } catch (error) {
         console.error('str2id 함수 오류:', error);
@@ -91,12 +91,13 @@ function generateCaseCondition(userReq) {
 async function findPathAsync(requestData) {
     try {
         const userReq1 = requestData; //살려야하는 부분
-        const userReqNum = await str2id(userReq1); //
+        const userReqNum = await str2id(userReq1); // 이때, 출발지 없으면 [0], 도착지 없으면 [0,0]
+        console.log('userReqNum:', userReqNum);
+        if (userReqNum === [0] || userReqNum === [0,0]){
+            return { shortestPath: 0, minAggCost: 0 , userReqNum};
+        }
         const costCondition = generateCaseCondition(userReq1);
-
-
         try {
-
             const AllPointsPath = [];
             createVariations(userReqNum, 0, [], AllPointsPath);
             //console.log('AllPointsPath:',AllPointsPath);
@@ -158,22 +159,19 @@ async function findPathAsync(requestData) {
                     const aggCosts = path
                         .filter(step => step.edge === '-1')
                         .map(step => step.agg_cost);
-
                     return sum + aggCosts.reduce((innerSum, cost) => innerSum + cost, 0);
                 }, 0);
             });
-            //console.log(sumAggCosts);
             const minAggCost = Math.min(...sumAggCosts);
             const minAggCostIndex = sumAggCosts.indexOf(minAggCost);
             let shortestPath = AllPaths[minAggCostIndex];
-            console.log(shortestPath);
+            //console.log(shortestPath);
             if ( minAggCost >= 10000) {
                 // 유효하지 않은 입력에 대한 처리, 예: 경로 데이터나 totalDistance 값을 null로 설정
-                return { shortestPath: 0, minAggCost: 0 };
+                console.log(userReqNum);
+                return { shortestPath: 0, minAggCost: 0 , userReqNum};
             }
-
-            return {shortestPath, minAggCost};
-
+            return {shortestPath, minAggCost, userReqNum};
         } catch (error) {
             console.error('임시 테이블 생성 중 오류:', error);
             throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
@@ -247,7 +245,7 @@ async function getBuildingInfoAsync(req) {
                          FROM bd_info as b
                          INNER JOIN poi_point as p
                          ON b.bg_name = p.bg_name
-                         WHERE p.bg_name = '${req.keyword}'`;
+                         WHERE p.bg_name LIKE '%${req.keyword}%'`;
     const queryResult = await client.query(queryString);
     return queryResult;
 }
