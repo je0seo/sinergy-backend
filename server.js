@@ -1,3 +1,5 @@
+//server.js
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -92,7 +94,7 @@ async function findPathAsync(requestData) {
     try {
         const userReq1 = requestData; //살려야하는 부분
         const userReqNum = await str2id(userReq1); // 이때, 출발지 없으면 [0], 도착지 없으면 [0,0]
-        console.log('userReqNum:', userReqNum);
+        //console.log('userReqNum:', userReqNum);
         if (userReqNum === [0] || userReqNum === [0,0]){
             return { shortestPath: 0, minAggCost: 0 , userReqNum};
         }
@@ -168,7 +170,7 @@ async function findPathAsync(requestData) {
             //console.log(shortestPath);
             if ( minAggCost >= 10000) {
                 // 유효하지 않은 입력에 대한 처리, 예: 경로 데이터나 totalDistance 값을 null로 설정
-                console.log(userReqNum);
+                //console.log(userReqNum);
                 return { shortestPath: 0, minAggCost: 0 , userReqNum};
             }
             return {shortestPath, minAggCost, userReqNum};
@@ -207,10 +209,10 @@ async function ShowReqAsync(requestDatatype) {
             Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'벤치\'';
         }
         else if (requestDatatype.Req === 'bicycle') {
-            Id4ShowQuery ='SELECT node_id FROM "node" WHERE bulid_name = "따릉이 대여소"';
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'따릉이 대여소\'';
         }
         else if (requestDatatype.Req === 'smoking') {
-            Id4ShowQuery ='SELECT node_id FROM "node" WHERE bulid_name = "흡연부스"';
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'흡연부스\'';
         }
         else if (requestDatatype.Req === 'unpaved') {
             Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
@@ -237,17 +239,17 @@ async function ShowReqAsync(requestDatatype) {
         } else if (requestDatatype.Req === 'atm' || requestDatatype.Req === 'bench' || requestDatatype.Req === 'bicycle' || requestDatatype.Req === 'smoking') {
             resultIds = A.map(item => Number(item.node_id));
         }
+        console.log(resultIds);
         return resultIds;
     } catch (error) {
         console.error('Error in ShowReqAsync:', error);
         throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
     }
 }
-
 app.post('/ShowReq', async (req, res) => {
     try {
         const Ids = await ShowReqAsync(req.body);
-        res.json({ Ids }); // 클라이언트에게 편의시설/장애물종류별 ID 배열 전송
+        res.json({ Ids: Ids }); // 클라이언트에게 편의시설/장애물종류별 ID 배열 전송
     } catch (error) {
         console.error('Error during POST request:', error);
         res.status(500).json({ error: 'Internal Server Error' });
