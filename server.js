@@ -22,7 +22,7 @@ app.use(express.json());
 async function str2id(userReq1) {
     try {
         let AllPoints = [];
-        var str2idQuery = 'SELECT node_id from "node" WHERE  "node".build_name = $1';
+        var str2idQuery = 'SELECT node_id from "node" WHERE  "node".bulid_name = $1';
         const startResult = await client.query(str2idQuery, [userReq1.start]);
         const endResult = await client.query(str2idQuery, [userReq1.end]);
 
@@ -242,19 +242,19 @@ app.post('/ShowReq', async (req, res) => {
     }
 });
 
-async function GetBuildingInfoAsync(keyword) {
+async function getBuildingInfoAsync(req) {
     const queryString = `SELECT b.bd_id, p.bg_name, p.type, b.summary, b.image_url, b.total_floor, b.lounge_count
                          FROM bd_info as b
                          INNER JOIN poi_point as p
                          ON b.bg_name = p.bg_name
-                         WHERE p.bg_name = '${keyword}'`;
+                         WHERE p.bg_name = '${req.keyword}'`;
     const queryResult = await client.query(queryString);
     return queryResult;
 }
 
 app.post('/showBuildingInfo', async (req, res) => {
     try {
-        const bgInfo = await findBuildingAsync(req.body);
+        const bgInfo = await getBuildingInfoAsync(req.body);
         res.json(bgInfo);
     } catch (error) {
         console.error('Error during POST request:', error);
