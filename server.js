@@ -200,6 +200,18 @@ async function ShowReqAsync(requestDatatype) {
         if (requestDatatype.Req === 'facilities') {
             Id4ShowQuery = 'SELECT node_id FROM "node" WHERE node_att = 8';
         }
+        else if (requestDatatype.Req === 'atm') {
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'ATM\'';
+        }
+        else if (requestDatatype.Req === 'bench') {
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'벤치\'';
+        }
+        else if (requestDatatype.Req === 'bicycle') {
+            Id4ShowQuery ='SELECT node_id FROM "node" WHERE bulid_name = "따릉이 대여소"';
+        }
+        else if (requestDatatype.Req === 'smoking') {
+            Id4ShowQuery ='SELECT node_id FROM "node" WHERE bulid_name = "흡연부스"';
+        }
         else if (requestDatatype.Req === 'unpaved') {
             Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
         }
@@ -222,6 +234,8 @@ async function ShowReqAsync(requestDatatype) {
             resultIds = A.map(item => Number(item.node_id));
         } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
             resultIds = A.map(item => Number(item.id));
+        } else if (requestDatatype.Req === 'atm' || requestDatatype.Req === 'bench' || requestDatatype.Req === 'bicycle' || requestDatatype.Req === 'smoking') {
+            resultIds = A.map(item => Number(item.node_id));
         }
         return resultIds;
     } catch (error) {
