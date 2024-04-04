@@ -239,7 +239,6 @@ async function ShowReqAsync(requestDatatype) {
         } else if (requestDatatype.Req === 'atm' || requestDatatype.Req === 'bench' || requestDatatype.Req === 'bicycle' || requestDatatype.Req === 'smoking') {
             resultIds = A.map(item => Number(item.node_id));
         }
-        console.log(resultIds);
         return resultIds;
     } catch (error) {
         console.error('Error in ShowReqAsync:', error);
