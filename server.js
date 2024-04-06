@@ -262,8 +262,8 @@ async function getBuildingInfoAsync(req) {
                          INNER JOIN poi_point as p
                          ON b.bg_name = p.bg_name
                          WHERE p.bg_name LIKE '%${req.keyword}%'
-                         OR p.nickname LIKE '%${req.keyword}%'
-                         OR p.eng_name LIKE INITCAP('%${req.keyword}%')`;
+                         OR p.nickname LIKE '${req.keyword}'
+                         OR UPPER(p.eng_name) LIKE UPPER('%${req.keyword}%')`;
     const queryResult = await client.query(queryString);
     return queryResult;
 }
