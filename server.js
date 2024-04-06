@@ -256,7 +256,8 @@ app.post('/ShowReq', async (req, res) => {
 });
 
 async function getBuildingInfoAsync(req) {
-    const queryString = `SELECT b.bd_id, p.bg_name, p.type, b.summary, b.image_url, b.total_floor, b.lounge_count
+    const queryString = `SELECT b.bd_id, p.bg_name, p.type, b.summary, b.image_url,
+                        b.total_floor, b.lounge_count, p.eng_name, p.nickname
                          FROM bd_info as b
                          INNER JOIN poi_point as p
                          ON b.bg_name = p.bg_name
