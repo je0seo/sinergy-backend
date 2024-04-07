@@ -216,19 +216,39 @@ async function ShowReqAsync(requestDatatype) {
     try {
         let Id4ShowQuery = '';
         if (requestDatatype.Req === 'facilities') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE node_att = 8';
+            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
+                           FROM conv_info as c
+                           INNER JOIN node as n
+                           ON c.node_id = n.node_id
+                           WHERE n.node_att = 8`;
         }
         else if (requestDatatype.Req === 'atm') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'ATM\'';
+            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
+                           FROM conv_info as c
+                           INNER JOIN node as n
+                           ON c.node_id = n.node_id
+                           WHERE n.conv_cate = 5`;
         }
         else if (requestDatatype.Req === 'bench') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'벤치\'';
+            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
+                           FROM conv_info as c
+                           INNER JOIN node as n
+                           ON c.node_id = n.node_id
+                           WHERE n.conv_cate = 0`;
         }
         else if (requestDatatype.Req === 'bicycle') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'따릉이 대여소\'';
+            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
+                           FROM conv_info as c
+                           INNER JOIN node as n
+                           ON c.node_id = n.node_id
+                           WHERE n.conv_cate = 16`;
         }
         else if (requestDatatype.Req === 'smoking') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'흡연부스\'';
+            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
+                            FROM conv_info as c
+                            INNER JOIN node as n
+                            ON c.node_id = n.node_id
+                            WHERE n.conv_cate = 1`;
         }
         else if (requestDatatype.Req === 'unpaved') {
             Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
@@ -240,22 +260,30 @@ async function ShowReqAsync(requestDatatype) {
             Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18';
         }
         else if (requestDatatype.Req === 'bump') {
-            Id4ShowQuery ='SELECT node_id FROM "node" WHERE node_att = 3';
+            Id4ShowQuery ='SELECT node_id, image_obs, bump_hei FROM "node" WHERE node_att = 3';
         }
         else if (requestDatatype.Req === 'bol') {
-            Id4ShowQuery ='SELECT node_id FROM "node" WHERE node_att = 1';
+            Id4ShowQuery ='SELECT node_id, image_obs, bol_width FROM "node" WHERE node_att = 1';
         }
         const queryResults = await client.query(Id4ShowQuery);
         const A = queryResults.rows;
-        let resultIds;
-        if (requestDatatype.Req === 'facilities' || requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
-            resultIds = A.map(item => Number(item.node_id));
+        let ids;
+        let images;
+        let info;
+        if (requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
+            ids = A.map(item => Number(item.node_id));
+            images = A.map(item => item.image_obs);
+            info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
         } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
-            resultIds = A.map(item => Number(item.id));
-        } else if (requestDatatype.Req === 'atm' || requestDatatype.Req === 'bench' || requestDatatype.Req === 'bicycle' || requestDatatype.Req === 'smoking') {
-            resultIds = A.map(item => Number(item.node_id));
+            ids = A.map(item => Number(item.id));
+            images = '';
+            info = '';
+        } else if (requestDatatype.Req === 'facilities' || requestDatatype.Req === 'atm' || requestDatatype.Req === 'bench' || requestDatatype.Req === 'bicycle' || requestDatatype.Req === 'smoking') {
+            ids = A.map(item => Number(item.node_id));
+            images = A.map(item => item.image_url);
+            info = A.map(item => item.summary)
         }
-        return resultIds;
+        return {ids, images, info};
     } catch (error) {
         console.error('Error in ShowReqAsync:', error);
         throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
@@ -263,8 +291,8 @@ async function ShowReqAsync(requestDatatype) {
 }
 app.post('/ShowReq', async (req, res) => {
     try {
-        const Ids = await ShowReqAsync(req.body);
-        res.json({ Ids: Ids }); // 클라이언트에게 편의시설/장애물종류별 ID 배열 전송
+        const data = await ShowReqAsync(req.body);
+        res.json({ ids: data.ids, images: data.images, info: data.info}); // 클라이언트에게 편의시설/장애물종류별 ID, 이미지, 추가정보 배열 전송
     } catch (error) {
         console.error('Error during POST request:', error);
         res.status(500).json({ error: 'Internal Server Error' });
