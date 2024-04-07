@@ -225,10 +225,10 @@ async function ShowReqAsync(requestDatatype) {
             Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'벤치\'';
         }
         else if (requestDatatype.Req === 'bicycle') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'따릉이 대여소\'';
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'따릉이\'';
         }
         else if (requestDatatype.Req === 'smoking') {
-            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'흡연부스\'';
+            Id4ShowQuery = 'SELECT node_id FROM "node" WHERE bulid_name = \'흡연 구역\'';
         }
         else if (requestDatatype.Req === 'unpaved') {
             Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
