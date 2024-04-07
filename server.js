@@ -24,31 +24,47 @@ app.use(express.json());
 async function str2id(userReq1) {
     try {
         let AllPoints = [];
-        var str2idQuery = 'SELECT node_id from "node" WHERE  "node".bulid_name = $1';
+        let str2idQuery = 'SELECT node_id from "node" WHERE  "node".bulid_name = $1';
         const startResult = await client.query(str2idQuery, [userReq1.start]);
         const endResult = await client.query(str2idQuery, [userReq1.end]);
-        const start = startResult.rows.map(row => Number(row.node_id));
-        const end = endResult.rows.map(row => Number(row.node_id));
+        let start = startResult.rows.map(row => Number(row.node_id));
+        let end = endResult.rows.map(row => Number(row.node_id));
+        if (start.length === 0) {
+            console.log("출발지 정식명칭은 아님");
+            str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+            const startResult = await client.query(str2idQuery, [userReq1.start]);
+            start = startResult.rows.map(row => Number(row.node_id));
+            console.log('start:', start);
+            if (start.length === 0) { console.log("어라라"); return [0]; }
+        }
+        if (end.length === 0) {
+            console.log("도착지 정식명칭은 아님");
+            str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+            const endResult = await client.query(str2idQuery, [userReq1.end]);
+            end = endResult.rows.map(row => Number(row.node_id));
+            console.log('end:', end);
+            if (end.length === 0) { console.log("안되는데"); return [0, 0]; }
+        }
         const stopovers = userReq1.stopovers || []; //falsy" 값(예: undefined, null, false, 0, NaN, "")일 경우 ([]) 반환.만약 userReq1.stopovers가 비어있지 않다면, 그 값을 그대로 사용
-        if (stopovers.length === 0) {
+        if (stopovers.length === 0) { //애초에 경유지가 없는 경우
+            console.log("확인");
             AllPoints = [start, end];
         } else {
-            for (let i = 0; i < stopovers.length; i++) {
-                const stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
-                stopovers[i]=stopoversResult.rows.map(row => Number(row.node_id));
+            for (let i = 0; i < stopovers.length; i++) {//경유지가 존재하는 경우,
+                let stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
+                stopovers[i] = stopoversResult.rows.map(row => Number(row.node_id));
+                if (stopovers[i].length === 0) {
+                    str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+                    stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
+                    stopovers[i] = stopoversResult.rows.map(row => Number(row.node_id));
+                }
             }
             AllPoints = [start, ...stopovers, end];
         }
-        if (start.length === 0) {
-            return [0];
-        } else if (end.length === 0) {
-            return [0,0];
-        }
+        console.log("AllPoints:", AllPoints);
         return AllPoints;
     } catch (error) {
         console.error('str2id 함수 오류:', error);
-        //alert("입력한 장소가 존재하지 않습니다.새로고침하세요.");
-        throw error;
     }
 }
 
