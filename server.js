@@ -92,7 +92,7 @@ function generateCaseCondition(userReq) {
         conditions.push("link_att = 5");
     }
     if (userReq.features.slope) { //경사
-        conditions.push("grad_deg >= 3.18");
+        conditions.push("grad_deg >= 3.18 AND link_att != 5");
     }
     if (userReq.features.bump) { //도로턱
         conditions.push("start_bump_hei >= 2 or end_bump_hei >= 2");
@@ -257,7 +257,7 @@ async function ShowReqAsync(requestDatatype) {
             Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 5';
         }
         else if (requestDatatype.Req === 'slope') {
-            Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18';
+            Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18 AND link_att != 5';
         }
         else if (requestDatatype.Req === 'bump') {
             Id4ShowQuery ='SELECT node_id, image_obs, bump_hei FROM "node" WHERE node_att = 3';
