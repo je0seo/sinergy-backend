@@ -30,20 +30,43 @@ async function str2id(userReq1) {
         let start = startResult.rows.map(row => Number(row.node_id));
         let end = endResult.rows.map(row => Number(row.node_id));
         if (start.length === 0) {
-            console.log("출발지 정식명칭은 아님");
-            str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+            console.log("출발지 build_name에 없음");
+            str2idQuery = `SELECT n.node_id
+                           FROM node as n
+                           JOIN convenient as c
+                           ON n.conv_cate = c.conv_cate
+                           WHERE c.description = $1`;
             const startResult = await client.query(str2idQuery, [userReq1.start]);
             start = startResult.rows.map(row => Number(row.node_id));
             console.log('start:', start);
-            if (start.length === 0) { console.log("어라라"); return [0]; }
+            if (start.length === 0) {
+                if (start.length === 0) {
+                    console.log("출발지 convenint에도 없음. nick, eng에서 찾기 시작");
+                    str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+                    const startResult = await client.query(str2idQuery, [userReq1.start]);
+                    start = startResult.rows.map(row => Number(row.node_id));
+                    console.log('start:', start);
+                    if (start.length === 0) { return [0]; }
+                }
+            }
         }
         if (end.length === 0) {
-            console.log("도착지 정식명칭은 아님");
-            str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+            console.log("도착지 build_name에 없음");
+            str2idQuery = `SELECT n.node_id
+                           FROM node as n
+                           JOIN convenient as c
+                           ON n.conv_cate = c.conv_cate
+                           WHERE c.description = $1`;
             const endResult = await client.query(str2idQuery, [userReq1.end]);
             end = endResult.rows.map(row => Number(row.node_id));
             console.log('end:', end);
-            if (end.length === 0) { console.log("안되는데"); return [0, 0]; }
+            if (end.length === 0) {
+                str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+                const endResult = await client.query(str2idQuery, [userReq1.end]);
+                end = endResult.rows.map(row => Number(row.node_id));
+                console.log('end:', end);
+                if (end.length === 0) { return [0, 0]; }
+            }
         }
         const stopovers = userReq1.stopovers || []; //falsy" 값(예: undefined, null, false, 0, NaN, "")일 경우 ([]) 반환.만약 userReq1.stopovers가 비어있지 않다면, 그 값을 그대로 사용
         if (stopovers.length === 0) { //애초에 경유지가 없는 경우
@@ -53,10 +76,19 @@ async function str2id(userReq1) {
             for (let i = 0; i < stopovers.length; i++) {//경유지가 존재하는 경우,
                 let stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
                 stopovers[i] = stopoversResult.rows.map(row => Number(row.node_id));
-                if (stopovers[i].length === 0) {
-                    str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+                if (stopovers[i].length === 0) { //경유지가 build_name에 없는 경우 편의시설에서 확인
+                    str2idQuery = `SELECT n.node_id
+                           FROM node as n
+                           JOIN convenient as c
+                           ON n.conv_cate = c.conv_cate
+                           WHERE c.description = $1`;
                     stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
                     stopovers[i] = stopoversResult.rows.map(row => Number(row.node_id));
+                    if (stopovers[i].length === 0) { //경유지가 build_name에 없는데 편의시설도 아닌 경우
+                        str2idQuery = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+                        stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
+                        stopovers[i] = stopoversResult.rows.map(row => Number(row.node_id));
+                    }
                 }
             }
             AllPoints = [start, ...stopovers, end];
@@ -214,41 +246,63 @@ app.post('/findPathServer', async (req, res) => {
 });
 async function ShowReqAsync(requestDatatype) {
     try {
-        let Id4ShowQuery = '';
-        if (requestDatatype.Req === 'facilities') {
-            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
+        let Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
                            FROM conv_info as c
                            INNER JOIN node as n
-                           ON c.node_id = n.node_id
-                           WHERE n.node_att = 8`;
+                           ON c.node_id = n.node_id`;
+        if (requestDatatype.Req === 'bench') { //벤치
+            Id4ShowQuery += ` WHERE n.conv_cate = 0`;
         }
-        else if (requestDatatype.Req === 'atm') {
-            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
-                           FROM conv_info as c
-                           INNER JOIN node as n
-                           ON c.node_id = n.node_id
-                           WHERE n.conv_cate = 5`;
+        else if (requestDatatype.Req === 'smoking') { //흡연 부스
+            Id4ShowQuery += ` WHERE n.conv_cate = 1`;
         }
-        else if (requestDatatype.Req === 'bench') {
-            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
-                           FROM conv_info as c
-                           INNER JOIN node as n
-                           ON c.node_id = n.node_id
-                           WHERE n.conv_cate = 0`;
+        else if (requestDatatype.Req === 'store') { //편의점
+            Id4ShowQuery += ` WHERE n.conv_cate = 2`;
         }
-        else if (requestDatatype.Req === 'bicycle') {
-            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
-                           FROM conv_info as c
-                           INNER JOIN node as n
-                           ON c.node_id = n.node_id
-                           WHERE n.conv_cate = 16`;
+        else if (requestDatatype.Req === 'bicycle') { //자전거거치대
+            Id4ShowQuery += ` WHERE n.conv_cate = 3`;
         }
-        else if (requestDatatype.Req === 'smoking') {
-            Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
-                            FROM conv_info as c
-                            INNER JOIN node as n
-                            ON c.node_id = n.node_id
-                            WHERE n.conv_cate = 1`;
+        else if (requestDatatype.Req === 'cafe') { // 카페
+            Id4ShowQuery += ` WHERE n.conv_cate = 4`;
+        }
+        else if (requestDatatype.Req === 'atm') { //은행/atm
+            Id4ShowQuery += ` WHERE n.conv_cate = 5`;
+        }
+        else if (requestDatatype.Req === 'postoffice') { //우체국
+            Id4ShowQuery += ` WHERE n.conv_cate = 6`;
+        }
+        else if (requestDatatype.Req === 'healthservice') { //보건소
+            Id4ShowQuery += ` WHERE n.conv_cate = 7`;
+        }
+        else if (requestDatatype.Req === 'cafeteria') { //학생식당
+            Id4ShowQuery += ` WHERE n.conv_cate = 8`;
+        }
+        else if (requestDatatype.Req === 'print') { //복사실
+            Id4ShowQuery += ` WHERE n.conv_cate = 9`;
+        }
+        else if (requestDatatype.Req === 'gym') { //헬스장
+            Id4ShowQuery += ` WHERE n.conv_cate = 10`;
+        }
+        else if (requestDatatype.Req === 'tennis') { //테니스장
+            Id4ShowQuery += ` WHERE n.conv_cate = 11`;
+        }
+        else if (requestDatatype.Req === 'basketball') { //농구장
+            Id4ShowQuery += ` WHERE n.conv_cate = 12`;
+        }
+        else if (requestDatatype.Req === 'breakroom') { //휴게실
+            Id4ShowQuery += ` WHERE n.conv_cate = 13`;
+        }
+        else if (requestDatatype.Req === 'lounge') { //학생라운지
+            Id4ShowQuery += ` WHERE n.conv_cate = 14`;
+        }
+        else if (requestDatatype.Req === 'seminarroom') { //세미나실
+            Id4ShowQuery += ` WHERE n.conv_cate = 15`;
+        }
+        else if (requestDatatype.Req === 'Sbicycle') { //따릉이대여소
+            Id4ShowQuery += ` WHERE n.conv_cate = 16`;
+        }
+        else if (requestDatatype.Req === 'facilities') {
+            Id4ShowQuery += ` WHERE n.node_att = 8`;
         }
         else if (requestDatatype.Req === 'unpaved') {
             Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
@@ -278,8 +332,10 @@ async function ShowReqAsync(requestDatatype) {
             ids = A.map(item => Number(item.id));
             images = '';
             info = '';
-        } else if (requestDatatype.Req === 'facilities' || requestDatatype.Req === 'atm' || requestDatatype.Req === 'bench' || requestDatatype.Req === 'bicycle' || requestDatatype.Req === 'smoking') {
+        } else {
+            console.log(requestDatatype.Req);
             ids = A.map(item => Number(item.node_id));
+            console.log(ids);
             images = A.map(item => item.image_url);
             info = A.map(item => item.summary)
         }
