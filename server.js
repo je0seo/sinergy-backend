@@ -283,6 +283,12 @@ async function ShowReqAsync(requestDatatype) {
         else if (requestDatatype.Req === 'Sbicycle') { //따릉이대여소
             Id4ShowQuery += ` WHERE n.conv_cate = 16`;
         }
+        else if (requestDatatype.Req === 'library') { //도서관
+            Id4ShowQuery += ` WHERE n.conv_cate = 17`;
+        }
+        else if (requestDatatype.Req === 'vendingMachine') { //자판기
+            Id4ShowQuery += ` WHERE n.conv_cate = 18`;
+        }
         else if (requestDatatype.Req === 'facilities') {
             Id4ShowQuery += ` WHERE n.node_att = 8`;
         }
