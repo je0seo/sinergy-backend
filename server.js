@@ -296,10 +296,10 @@ async function ShowReqAsync(requestDatatype) {
             Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18 AND link_att != 5';
         }
         else if (requestDatatype.Req === 'bump') {
-            Id4ShowQuery ='SELECT node_id, image_obs, bump_hei FROM "node" WHERE node_att = 3';
+            Id4ShowQuery ='SELECT node_id, image_nobs, bump_hei FROM "node" WHERE node_att = 3';
         }
         else if (requestDatatype.Req === 'bol') {
-            Id4ShowQuery ='SELECT node_id, image_obs, bol_width FROM "node" WHERE node_att = 1';
+            Id4ShowQuery ='SELECT node_id, image_nobs, bol_width FROM "node" WHERE node_att = 1';
         }
         const queryResults = await client.query(Id4ShowQuery);
         const A = queryResults.rows;
