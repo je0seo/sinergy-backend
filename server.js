@@ -283,6 +283,12 @@ async function ShowReqAsync(requestDatatype) {
         else if (requestDatatype.Req === 'Sbicycle') { //따릉이대여소
             Id4ShowQuery += ` WHERE n.conv_cate = 16`;
         }
+        else if (requestDatatype.Req === 'library') { //도서관
+            Id4ShowQuery += ` WHERE n.conv_cate = 17`;
+        }
+        else if (requestDatatype.Req === 'vendingMachine') { //자판기
+            Id4ShowQuery += ` WHERE n.conv_cate = 18`;
+        }
         else if (requestDatatype.Req === 'facilities') {
             Id4ShowQuery += ` WHERE n.node_att = 8`;
         }
@@ -308,7 +314,7 @@ async function ShowReqAsync(requestDatatype) {
         let info;
         if (requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
             ids = A.map(item => Number(item.node_id));
-            images = A.map(item => item.image_obs);
+            images = A.map(item => item.image_nobs);
             info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
         } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
             ids = A.map(item => Number(item.id));
