@@ -314,7 +314,7 @@ async function ShowReqAsync(requestDatatype) {
         let info;
         if (requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
             ids = A.map(item => Number(item.node_id));
-            images = A.map(item => item.image_obs);
+            images = A.map(item => item.image_nobs);
             info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
         } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
             ids = A.map(item => Number(item.id));
