@@ -232,6 +232,8 @@ async function ShowReqAsync(requestDatatype) {
                            FROM conv_info as c
                            INNER JOIN node as n
                            ON c.node_id = n.node_id`;
+        const query4LinkObs = `SELECT id, image_lobs, grad_deg FROM link`
+
         if (requestDatatype.Req === 'bench') { //벤치
             Id4ShowQuery += ` WHERE n.conv_cate = 0`;
         }
@@ -293,13 +295,13 @@ async function ShowReqAsync(requestDatatype) {
             Id4ShowQuery += ` WHERE n.node_att = 8`;
         }
         else if (requestDatatype.Req === 'unpaved') {
-            Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 4';
+            Id4ShowQuery = query4LinkObs + ` WHERE link_att = 4`;
         }
         else if (requestDatatype.Req === 'stairs') {
-            Id4ShowQuery ='SELECT id FROM "link" WHERE link_att = 5';
+            Id4ShowQuery = query4LinkObs + ` WHERE link_att = 5`;
         }
         else if (requestDatatype.Req === 'slope') {
-            Id4ShowQuery ='SELECT id FROM "link" WHERE grad_deg >= 3.18 AND link_att != 5';
+            Id4ShowQuery = query4LinkObs + ` WHERE grad_deg >= 3.18 AND link_att != 5`;
         }
         else if (requestDatatype.Req === 'bump') {
             Id4ShowQuery ='SELECT node_id, image_nobs, bump_hei FROM "node" WHERE node_att = 3';
@@ -318,8 +320,8 @@ async function ShowReqAsync(requestDatatype) {
             info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
         } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
             ids = A.map(item => Number(item.id));
-            images = '';
-            info = '';
+            images = A.map(item => item.image_lobs);
+            info = A.map(item => item.grad_deg);
         } else {
             console.log(requestDatatype.Req);
             ids = A.map(item => Number(item.node_id));
