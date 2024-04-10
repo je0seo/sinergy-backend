@@ -226,108 +226,96 @@ app.post('/findPathServer', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
+
+const ConvCateId = {
+    'bench': 0,     //벤치
+    'smoking': 1,   //흡연 부스
+    'store': 2,     //편의점
+    'bycicle': 3,   //자전거거치대
+    'cafe': 4,      // 카페
+    'atm': 5,       //은행/atm
+    'postoffice': 6,     //우체국
+    'healthservice': 7,  //보건소
+    'cafeteria': 8,     //학생식당
+    'print': 9,         //복사실
+    'gym': 10,          //헬스장
+    'tennis': 11,       //테니스장
+    'basketball': 12,   //농구장
+    'breakroom': 13,    //휴게실
+    'lounge': 14,       //학생라운지
+    'seminarroom': 15,  //세미나실
+    'Sbicycle': 16,     //따릉이대여소
+    'library': 17,      //도서관
+    'vendingMachine': 18    //자판기
+}
+
+const LinkAtt = {
+    'unpaved': 4,
+    'stairs': 5
+}
+
+Object.freeze(ConvCateId);
+Object.freeze(LinkAtt);
+
+function getConvCateId(type) {
+    return ConvCateId[type]
+}
+function getLinkAtt(type) {
+    return LinkAtt[type]
+}
+
+function createQueryBy(type) {
+    const query4Conv = `SELECT c.node_id, c.image_url, c.summary
+                     FROM conv_info as c
+                     INNER JOIN node as n
+                     ON c.node_id = n.node_id`
+    const query4LinkObs = `SELECT id, image_lobs, grad_deg FROM link`
+
+    switch (type) {
+        case 'facilities':
+            return query4Conv + ` WHERE n.node_att = 8`;
+        case 'unpaved':
+        case 'stairs':
+            return query4LinkObs + ` WHERE link_att = ${getLinkAtt(type)}`;
+        case 'slope':
+            return query4LinkObs + ` WHERE grad_deg >= 3.18 AND link_att != 5`;
+        case 'bump':
+            return 'SELECT node_id, image_nobs, bump_hei FROM "node" WHERE node_att = 3';
+        case 'bol':
+            return 'SELECT node_id, image_nobs, bol_width FROM "node" WHERE node_att = 1';
+        default:
+            return query4Conv + ` WHERE n.conv_cate = ${getConvCateId(type)}`;
+    }
+}
 async function ShowReqAsync(requestDatatype) {
     try {
-        let Id4ShowQuery = `SELECT c.node_id, c.image_url, c.summary
-                           FROM conv_info as c
-                           INNER JOIN node as n
-                           ON c.node_id = n.node_id`;
-        const query4LinkObs = `SELECT id, image_lobs, grad_deg FROM link`
-
-        if (requestDatatype.Req === 'bench') { //벤치
-            Id4ShowQuery += ` WHERE n.conv_cate = 0`;
-        }
-        else if (requestDatatype.Req === 'smoking') { //흡연 부스
-            Id4ShowQuery += ` WHERE n.conv_cate = 1`;
-        }
-        else if (requestDatatype.Req === 'store') { //편의점
-            Id4ShowQuery += ` WHERE n.conv_cate = 2`;
-        }
-        else if (requestDatatype.Req === 'bicycle') { //자전거거치대
-            Id4ShowQuery += ` WHERE n.conv_cate = 3`;
-        }
-        else if (requestDatatype.Req === 'cafe') { // 카페
-            Id4ShowQuery += ` WHERE n.conv_cate = 4`;
-        }
-        else if (requestDatatype.Req === 'atm') { //은행/atm
-            Id4ShowQuery += ` WHERE n.conv_cate = 5`;
-        }
-        else if (requestDatatype.Req === 'postoffice') { //우체국
-            Id4ShowQuery += ` WHERE n.conv_cate = 6`;
-        }
-        else if (requestDatatype.Req === 'healthservice') { //보건소
-            Id4ShowQuery += ` WHERE n.conv_cate = 7`;
-        }
-        else if (requestDatatype.Req === 'cafeteria') { //학생식당
-            Id4ShowQuery += ` WHERE n.conv_cate = 8`;
-        }
-        else if (requestDatatype.Req === 'print') { //복사실
-            Id4ShowQuery += ` WHERE n.conv_cate = 9`;
-        }
-        else if (requestDatatype.Req === 'gym') { //헬스장
-            Id4ShowQuery += ` WHERE n.conv_cate = 10`;
-        }
-        else if (requestDatatype.Req === 'tennis') { //테니스장
-            Id4ShowQuery += ` WHERE n.conv_cate = 11`;
-        }
-        else if (requestDatatype.Req === 'basketball') { //농구장
-            Id4ShowQuery += ` WHERE n.conv_cate = 12`;
-        }
-        else if (requestDatatype.Req === 'breakroom') { //휴게실
-            Id4ShowQuery += ` WHERE n.conv_cate = 13`;
-        }
-        else if (requestDatatype.Req === 'lounge') { //학생라운지
-            Id4ShowQuery += ` WHERE n.conv_cate = 14`;
-        }
-        else if (requestDatatype.Req === 'seminarroom') { //세미나실
-            Id4ShowQuery += ` WHERE n.conv_cate = 15`;
-        }
-        else if (requestDatatype.Req === 'Sbicycle') { //따릉이대여소
-            Id4ShowQuery += ` WHERE n.conv_cate = 16`;
-        }
-        else if (requestDatatype.Req === 'library') { //도서관
-            Id4ShowQuery += ` WHERE n.conv_cate = 17`;
-        }
-        else if (requestDatatype.Req === 'vendingMachine') { //자판기
-            Id4ShowQuery += ` WHERE n.conv_cate = 18`;
-        }
-        else if (requestDatatype.Req === 'facilities') {
-            Id4ShowQuery += ` WHERE n.node_att = 8`;
-        }
-        else if (requestDatatype.Req === 'unpaved') {
-            Id4ShowQuery = query4LinkObs + ` WHERE link_att = 4`;
-        }
-        else if (requestDatatype.Req === 'stairs') {
-            Id4ShowQuery = query4LinkObs + ` WHERE link_att = 5`;
-        }
-        else if (requestDatatype.Req === 'slope') {
-            Id4ShowQuery = query4LinkObs + ` WHERE grad_deg >= 3.18 AND link_att != 5`;
-        }
-        else if (requestDatatype.Req === 'bump') {
-            Id4ShowQuery ='SELECT node_id, image_nobs, bump_hei FROM "node" WHERE node_att = 3';
-        }
-        else if (requestDatatype.Req === 'bol') {
-            Id4ShowQuery ='SELECT node_id, image_nobs, bol_width FROM "node" WHERE node_att = 1';
-        }
+        const Id4ShowQuery = createQueryBy(requestDatatype.Req)
         const queryResults = await client.query(Id4ShowQuery);
         const A = queryResults.rows;
+
         let ids;
         let images;
         let info;
-        if (requestDatatype.Req === 'bump' || requestDatatype.Req === 'bol') {
-            ids = A.map(item => Number(item.node_id));
-            images = A.map(item => item.image_nobs);
-            info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
-        } else if (requestDatatype.Req === 'unpaved' || requestDatatype.Req === 'stairs'|| requestDatatype.Req === 'slope' ) {
-            ids = A.map(item => Number(item.id));
-            images = A.map(item => item.image_lobs);
-            info = A.map(item => item.grad_deg);
-        } else {
-            console.log(requestDatatype.Req);
-            ids = A.map(item => Number(item.node_id));
-            console.log(ids);
-            images = A.map(item => item.image_url);
-            info = A.map(item => item.summary)
+        switch (requestDatatype.Req) {
+            case 'bump':
+            case 'bol':
+                ids = A.map(item => Number(item.node_id));
+                images = A.map(item => item.image_nobs);
+                info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
+                break;
+            case 'unpaved':
+            case 'stairs':
+            case 'slope':
+                ids = A.map(item => Number(item.id));
+                images = A.map(item => item.image_lobs);
+                info = A.map(item => item.grad_deg);
+                break;
+            default:
+                console.log(requestDatatype.Req);
+                ids = A.map(item => Number(item.node_id));
+                console.log(ids);
+                images = A.map(item => item.image_url);
+                info = A.map(item => item.summary)
         }
         return {ids, images, info};
     } catch (error) {
