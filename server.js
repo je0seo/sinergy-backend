@@ -206,7 +206,7 @@ const ConvCateId = {
     'bench': 0,     //벤치
     'smoking': 1,   //흡연 부스
     'store': 2,     //편의점
-    'bycicle': 3,   //자전거거치대
+    'bicycle': 3,   //자전거거치대
     'cafe': 4,      // 카페
     'atm': 5,       //은행/atm
     'postoffice': 6,     //우체국
@@ -221,7 +221,8 @@ const ConvCateId = {
     'seminarroom': 15,  //세미나실
     'Sbicycle': 16,     //따릉이대여소
     'library': 17,      //도서관
-    'vendingMachine': 18    //자판기
+    'vendingMachine': 18,    //자판기
+    'toilet': 19 //장애인 화장실
 }
 
 const LinkAtt = {
