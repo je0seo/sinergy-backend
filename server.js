@@ -31,56 +31,31 @@ async function str2id(userReq1) {
                            ON n.conv_cate = c.conv_cate
                            WHERE c.description = $1`;
         let str2idQuery2 = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
-        const startResult = await client.query(str2idQuery, [userReq1.start]);
-        const endResult = await client.query(str2idQuery, [userReq1.end]);
-        let start = startResult.rows.map(row => Number(row.node_id));
-        let end = endResult.rows.map(row => Number(row.node_id));
-        if (start.length === 0) {
-            const startResult = await client.query(str2idQuery1, [userReq1.start]);
-            start = startResult.rows.map(row => Number(row.node_id));
-            if (start.length === 0) {
-                if (start.length === 0) { //"출발지 convenient에도 없음. nick, eng에서 찾기 시작"
-                    const startResult = await client.query(str2idQuery2, [userReq1.start]);
-                    start = startResult.rows.map(row => Number(row.node_id));
-                    if (start.length === 0) { return [0]; }
-                }
-            }
-        }
-        if (end.length === 0) { //"도착지 build_name에 없음"
-            const endResult = await client.query(str2idQuery1, [userReq1.end]);
-            end = endResult.rows.map(row => Number(row.node_id));
-            if (end.length === 0) {
-                const endResult = await client.query(str2idQuery2, [userReq1.end]);
-                end = endResult.rows.map(row => Number(row.node_id));
-                console.log('end:', end);
-                if (end.length === 0) { return [0, 0]; }
-            }
-        }
-        const stopovers = userReq1.stopovers || []; //falsy" 값(예: undefined, null, false, 0, NaN, "")일 경우 ([]) 반환.만약 userReq1.stopovers가 비어있지 않다면, 그 값을 그대로 사용
-        if (stopovers.length === 0) { //애초에 경유지가 없는 경우
-            AllPoints = [start, end];
-        } else { //경유지 있는 경우
-            let stopover = [];
-            for (let i = 0; i < stopovers.length; i++) {
-                let stopoversResult = await client.query(str2idQuery, [stopovers[i]]);
-                stopover[i] = stopoversResult.rows.map(row => Number(row.node_id));
-                if (stopover[i].length === 0) { //경유지가 build_name에 없는 경우 편의시설에서 확인
-                    stopoversResult = await client.query(str2idQuery1, [stopovers[i]]);
-                    stopover[i] = stopoversResult.rows.map(row => Number(row.node_id));
-                    if (stopover[i].length === 0) { //경유지가 build_name에 없는데 편의시설도 아닌 경우
-                        stopoversResult = await client.query(str2idQuery2, [stopovers[i]]);
-                        stopover[i] = stopoversResult.rows.map(row => Number(row.node_id));
-                    }
-                }
-            }
-            AllPoints = [start, ...stopover, end];
-        }
+        let str2idQuery3 = 'SELECT node_id from "node" WHERE "node".lect_num = $1';
+        let start = await executeQuery(userReq1.start, str2idQuery, str2idQuery1, str2idQuery2, str2idQuery3);
+        let end = await executeQuery(userReq1.end, str2idQuery, str2idQuery1, str2idQuery2, str2idQuery3);
+        const stopovers = userReq1.stopovers || [];
+        let stopover = await Promise.all(stopovers.map(stop => executeQuery(stop, str2idQuery, str2idQuery1, str2idQuery2, str2idQuery3)));
+        AllPoints = [start, ...stopover, end];
         console.log("AllPoints:", AllPoints);
+
         return AllPoints;
     } catch (error) {
         console.error('str2id 함수 오류:', error);
     }
 }
+
+async function executeQuery(param, ...queries) {
+    for (let query of queries) {
+        const result = await client.query(query, [param]);
+        const rows = result.rows.map(row => Number(row.node_id));
+        if (rows.length > 0) {
+            return rows;
+        }
+    }
+    return [0];
+}
+
 
 function createVariations(arrays, currentIndex, currentVariation, result) {
     if (currentIndex === arrays.length) {
@@ -197,7 +172,7 @@ async function findPathAsync(requestData) {
             const minAggCost = Math.min(...sumAggCosts);
             const minAggCostIndex = sumAggCosts.indexOf(minAggCost);
             let shortestPath = AllPaths[minAggCostIndex];
-            //console.log(shortestPath);
+            console.log(shortestPath);
             if ( minAggCost >= 10000) {
                 // 유효하지 않은 입력에 대한 처리, 예: 경로 데이터나 totalDistance 값을 null로 설정
                 //console.log(userReqNum);
