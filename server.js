@@ -210,7 +210,6 @@ const ConvCateId = {
     'cafe': 4,      // 카페
     'atm': 5,       //은행/atm
     'postoffice': 6,     //우체국
-    'healthservice': 7,  //보건소
     'cafeteria': 8,     //학생식당
     'print': 9,         //복사실
     'gym': 10,          //헬스장
@@ -287,9 +286,7 @@ async function ShowReqAsync(requestDatatype) {
                 info = A.map(item => item.grad_deg);
                 break;
             default:
-                console.log(requestDatatype.Req);
                 ids = A.map(item => Number(item.node_id));
-                console.log(ids);
                 images = A.map(item => item.image_url);
                 info = A.map(item => item.summary)
         }
@@ -309,22 +306,41 @@ app.post('/ShowReq', async (req, res) => {
     }
 });
 
-async function getBuildingInfoAsync(req) {
-    const queryString = `SELECT b.bd_id, p.bg_name, p.type, b.summary, b.image_url,
-                        b.total_floor, b.lounge_count, p.eng_name, p.nickname
-                         FROM bd_info as b
-                         INNER JOIN poi_point as p
-                         ON b.bg_name = p.bg_name
-                         WHERE p.bg_name LIKE '%${req.keyword}%'
-                         OR p.nickname LIKE '${req.keyword}'
-                         OR UPPER(p.eng_name) LIKE UPPER('%${req.keyword}%')`;
-    const queryResult = await client.query(queryString);
-    return queryResult;
+function createQueryConditions(req) {
+    const commonString = `SELECT b.bd_id, p.bg_name, p.type, b.summary, b.image_url,
+                            b.total_floor, b.lounge_count, p.eng_name, p.nickname
+                             FROM bd_info as b
+                             INNER JOIN poi_point as p
+                             ON b.bg_name = p.bg_name`;
+    // 입력된 검색어(예: '학')가 bg_name 항목에 속할 경우, 검색어의 인덱스 순으로 (예: 학생회관>대학본부>과학기술관) ㄱㄴㄷ순 정렬
+    const c_org = ` WHERE p.bg_name LIKE '%${req.keyword}%'
+                    ORDER BY POSITION('${req.keyword}' IN p.bg_name) ASC,
+                    p.bg_name COLLATE "ko_KR.utf8" ASC`;
+    // 입력된 검색어가 nickname 항목에 속할 경우 ㄱㄴㄷ순 정렬
+    const c_nick = ` WHERE p.nickname LIKE '${req.keyword}'
+                    ORDER BY POSITION('${req.keyword}' IN p.nickname) ASC, p.nickname COLLATE "ko_KR.utf8" ASC`;
+    // 입력된 검색어가 eng_name 항목에 속할 경우 ABC순 정렬
+    const c_eng = ` WHERE p.eng_name ILIKE '%${req.keyword}%'
+                    ORDER BY eng_name ASC`;
+    return [commonString+c_org, commonString+c_nick, commonString+c_eng];
+}
+
+async function getBuildingInfoAsync(conditions) {
+    for (let i=0;i<conditions.length;i++) {
+        const queryResult = await client.query(conditions[i]);
+        if (queryResult.rowCount > 0) {  // 검색 결과가 있으면 바로 함수 종료
+            console.log(queryResult.rows);
+            return queryResult;
+        }
+        if (i === conditions.length-1)   // 세 개의 검색 조건 다 결과가 없을 경우 맨 마지막 쿼리 결과 return
+            return queryResult;
+    }
 }
 
 app.post('/showBuildingInfo', async (req, res) => {
     try {
-        const bgInfo = await getBuildingInfoAsync(req.body);
+        let conditions = createQueryConditions(req.body)
+        const bgInfo = await getBuildingInfoAsync(conditions);
         res.json(bgInfo);
     } catch (error) {
         console.error('Error during POST request:', error);
