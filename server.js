@@ -210,7 +210,6 @@ const ConvCateId = {
     'cafe': 4,      // 카페
     'atm': 5,       //은행/atm
     'postoffice': 6,     //우체국
-    'healthservice': 7,  //보건소
     'cafeteria': 8,     //학생식당
     'print': 9,         //복사실
     'gym': 10,          //헬스장
@@ -317,8 +316,9 @@ async function getBuildingInfoAsync(req) {
                          ON b.bg_name = p.bg_name
                          WHERE p.bg_name LIKE '%${req.keyword}%'
                          OR p.nickname LIKE '${req.keyword}'
-                         OR UPPER(p.eng_name) LIKE UPPER('%${req.keyword}%')`;
+                         OR p.eng_name ILIKE '%${req.keyword}%'`;
     const queryResult = await client.query(queryString);
+    console.log(queryResult.rows);
     return queryResult;
 }
 
