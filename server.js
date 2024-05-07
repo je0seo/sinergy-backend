@@ -86,11 +86,11 @@ function generateCaseCondition(userReq) {
     if (userReq.features.bump) { //도로턱
         conditions.push("start_bump_hei >= 2 or end_bump_hei >= 2");
     }
-    if (userReq.obstacleNodeIDs.length > 0) {
-        conditions.push("node1 in ("+ userReq.obstacleNodeIDs +")" + " or node2 in ("+ userReq.obstacleNodeIDs +")");
+    if (userReq.obstacleIDs.ObstacleNodeIDs.length > 0) {
+        conditions.push("node1 in ("+ userReq.obstacleIDs.ObstacleNodeIDs +")" + " or node2 in ("+ userReq.obstacleIDs.ObstacleNodeIDs +")");
     }
-    if (userReq.linkID) {
-        conditions.push("id in ("+ userReq.linkID +")");
+    if (userReq.obstacleIDs.ObstacleLinkIDs.length > 0) {
+        conditions.push("id in ("+ userReq.obstacleIDs.ObstacleLinkIDs +")");
     }
     let caseCondition = conditions.length > 0
         ? `CASE WHEN ${conditions.join(" OR ")} THEN 10000 ELSE slopel END as cost`
