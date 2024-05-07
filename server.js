@@ -92,6 +92,15 @@ function generateCaseCondition(userReq) {
     if (userReq.obstacleIDs.ObstacleLinkIDs.length > 0) {
         conditions.push("id in ("+ userReq.obstacleIDs.ObstacleLinkIDs +")");
     }
+    if (userReq.slopeD !== 3.18) {
+        conditions.push("grad_deg >= "+userReq.slopeD+" AND link_att != 5");
+    }
+    if (userReq.bumpC !== 2) {
+        conditions.push("start_bump_hei >= "+userReq.slopeD+" or end_bump_hei >= "+userReq.slopeD);
+    }
+    if (userReq.bolC !== 120) {
+        conditions.push("start_bol_width <= "+userReq.bolC+" or end_bol_width <= "+userReq.bolC);
+    }
     let caseCondition = conditions.length > 0
         ? `CASE WHEN ${conditions.join(" OR ")} THEN 10000 ELSE slopel END as cost`
         : "slopel as cost";
