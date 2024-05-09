@@ -72,39 +72,36 @@ function generateCaseCondition(userReq) {
     let conditions = [];
 
     if (userReq.features.bol) { //볼라드
-        conditions.push("start_node_att = 1 or end_node_att = 1");
+        if (userReq.bolC !== 120) {
+            conditions.push(" WHEN start_bol_width <= "+userReq.bolC+" or end_bol_width <= "+userReq.bolC +" THEN 10000");
+        }
+        else {
+            conditions.push(" WHEN start_node_att = 1 or end_node_att = 1 THEN 10000");
+        }
     }
     if (userReq.features.unpaved) { //비포장
-        conditions.push("link_att = 4");
+        conditions.push(" WHEN link_att = 4 THEN 10000");
     }
     if (userReq.features.stairs) { //계단
-        conditions.push("link_att = 5");
+        conditions.push(" WHEN link_att = 5 THEN 10000");
     }
     if (userReq.features.slope) { //경사
-        conditions.push("grad_deg >= 3.18 AND link_att != 5");
+        conditions.push(" WHEN grad_deg >= "+userReq.slopeD+" AND link_att != 5 THEN 10000");
     }
     if (userReq.features.bump) { //도로턱
-        conditions.push("start_bump_hei >= 2 or end_bump_hei >= 2");
+        conditions.push(" WHEN start_bump_hei >= "+userReq.bumpC+" or end_bump_hei >= "+userReq.bumpC +" THEN 10000");
     }
     if (userReq.obstacleIDs.ObstacleNodeIDs.length > 0) {
-        conditions.push("node1 in ("+ userReq.obstacleIDs.ObstacleNodeIDs +")" + " or node2 in ("+ userReq.obstacleIDs.ObstacleNodeIDs +")");
+        conditions.push(" WHEN node1 in ("+ userReq.obstacleIDs.ObstacleNodeIDs +")" + " or node2 in ("+ userReq.obstacleIDs.ObstacleNodeIDs +") THEN 10000");
     }
     if (userReq.obstacleIDs.ObstacleLinkIDs.length > 0) {
-        conditions.push("id in ("+ userReq.obstacleIDs.ObstacleLinkIDs +")");
+        conditions.push(" WHEN id in ("+ userReq.obstacleIDs.ObstacleLinkIDs +") THEN 10000");
     }
-    if (userReq.slopeD !== 3.18) {
-        conditions.push("grad_deg >= "+userReq.slopeD+" AND link_att != 5");
-    }
-    if (userReq.bumpC !== 2) {
-        conditions.push("start_bump_hei >= "+userReq.slopeD+" or end_bump_hei >= "+userReq.slopeD);
-    }
-    if (userReq.bolC !== 120) {
-        conditions.push("start_bol_width <= "+userReq.bolC+" or end_bol_width <= "+userReq.bolC);
-    }
-    let caseCondition = conditions.length > 0
-        ? `CASE WHEN ${conditions.join(" OR ")} THEN 10000 ELSE slopel END as cost`
-        : "slopel as cost";
 
+    let caseCondition = conditions.length > 0
+        ? `CASE ${conditions.join("")} ELSE slopel END as cost`
+        : "slopel as cost";
+    console.log(caseCondition);
     return caseCondition;
 }
 
@@ -186,7 +183,7 @@ async function findPathAsync(requestData) {
             const minAggCost = Math.min(...sumAggCosts);
             const minAggCostIndex = sumAggCosts.indexOf(minAggCost);
             let shortestPath = AllPaths[minAggCostIndex];
-            console.log(shortestPath);
+            //console.log(shortestPath);
             if ( minAggCost >= 10000) {
                 // 유효하지 않은 입력에 대한 처리, 예: 경로 데이터나 totalDistance 값을 null로 설정
                 //console.log(userReqNum);
