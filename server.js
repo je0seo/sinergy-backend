@@ -323,17 +323,15 @@ function createQueryConditions(req) {
                              FROM bd_info as b
                              INNER JOIN poi_point as p
                              ON b.bg_name = p.bg_name`;
-    // 입력된 검색어(예: '학')가 bg_name 항목에 속할 경우, 검색어의 인덱스 순으로 (예: 학생회관>대학본부>과학기술관) ㄱㄴㄷ순 정렬
-    const c_org = ` WHERE p.bg_name LIKE '%${req.keyword}%'
+    // 입력된 검색어(예: '학')가 bg_name 또는 nickname 항목에 속할 경우, 검색어의 인덱스 순으로 (예: 학생회관>대학본부>과학기술관) ㄱㄴㄷ순 정렬
+    const c_kor = ` WHERE p.bg_name LIKE '%${req.keyword}%'
+                    OR p.nickname LIKE '%${req.keyword}%'
                     ORDER BY POSITION('${req.keyword}' IN p.bg_name) ASC,
                     p.bg_name COLLATE "ko_KR.utf8" ASC`;
-    // 입력된 검색어가 nickname 항목에 속할 경우 ㄱㄴㄷ순 정렬
-    const c_nick = ` WHERE p.nickname LIKE '${req.keyword}'
-                    ORDER BY POSITION('${req.keyword}' IN p.nickname) ASC, p.nickname COLLATE "ko_KR.utf8" ASC`;
     // 입력된 검색어가 eng_name 항목에 속할 경우 ABC순 정렬
     const c_eng = ` WHERE p.eng_name ILIKE '%${req.keyword}%'
                     ORDER BY eng_name ASC`;
-    return [commonString+c_org, commonString+c_nick, commonString+c_eng];
+    return [commonString+c_kor, commonString+c_eng];
 }
 
 async function getBuildingInfoAsync(conditions) {
