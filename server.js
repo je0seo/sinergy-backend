@@ -246,44 +246,47 @@ function getLinkAtt(type) {
     return LinkAtt[type]
 }
 
-function createQueryBy(type) {
+function createQueryBy(Req) { //{ReqType, slopeD, bolC, bumpC}
     const query4Conv = `SELECT c.node_id, c.image_url, c.summary
                      FROM conv_info as c
                      INNER JOIN node as n
                      ON c.node_id = n.node_id`
     const query4LinkObs = `SELECT id, image_lobs, grad_deg FROM link`
 
-    switch (type) {
+    switch (Req.ReqType) {
         case 'facilities':
             return query4Conv + ` WHERE n.node_att = 8`;
         case 'unpaved':
         case 'stairs':
-            return query4LinkObs + ` WHERE link_att = ${getLinkAtt(type)}`;
+            return query4LinkObs + ` WHERE link_att = ${getLinkAtt(Req.ReqType)}`;
         case 'slope':
-            return query4LinkObs + ` WHERE grad_deg >= 3.18 AND link_att != 5`;
+            return query4LinkObs + ` WHERE link_att != 5 AND grad_deg >= `+Req.slopeD;
         case 'bump':
-            return 'SELECT node_id, image_nobs, bump_hei FROM "node" WHERE node_att = 3';
+            return 'SELECT node_id, image_nobs, bump_hei FROM "node" WHERE bump_hei >= '+Req.bumpC;
         case 'bol':
-            return 'SELECT node_id, image_nobs, bol_width FROM "node" WHERE node_att = 1';
+            return 'SELECT node_id, image_nobs, bol_width FROM "node" WHERE bol_width > 0 and bol_width < '+Req.bolC;
         default:
-            return query4Conv + ` WHERE n.conv_cate = ${getConvCateId(type)}`;
+            return query4Conv + ` WHERE n.conv_cate = ${getConvCateId(Req.ReqType)}`;
     }
 }
+
+
 async function ShowReqAsync(requestDatatype) {
     try {
-        const Id4ShowQuery = createQueryBy(requestDatatype.Req)
+        // {ReqType, slopeD, bolC, bumpC}
+        const Id4ShowQuery = createQueryBy(requestDatatype.Req);
         const queryResults = await client.query(Id4ShowQuery);
         const A = queryResults.rows;
 
         let ids;
         let images;
         let info;
-        switch (requestDatatype.Req) {
+        switch (requestDatatype.Req.ReqType) {
             case 'bump':
             case 'bol':
                 ids = A.map(item => Number(item.node_id));
                 images = A.map(item => item.image_nobs);
-                info = (requestDatatype.Req === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
+                info = (requestDatatype.Req.ReqType === 'bump') ? A.map(item => item.bump_hei) : A.map(item => item.bol_width);
                 break;
             case 'unpaved':
             case 'stairs':
