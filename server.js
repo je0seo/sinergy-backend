@@ -228,7 +228,14 @@ const ConvCateId = {
     'Sbicycle': 16,     //따릉이대여소
     'library': 17,      //도서관
     'vendingMachine': 18,    //자판기
-    'toilet': 19 //장애인 화장실
+    'toilet': 19, //장애인 화장실
+    'restaurant': 20,//식당
+    'unmanned civil service': 21, //무인민원발급가
+    'rooftop garden': 22, //옥상정원
+    'shower room': 23, //샤워실
+    'sports': '10, 11, 12',
+    'dining': '8, 20',
+    'cafe&store': '2, 4',
 }
 
 const LinkAtt = {
@@ -258,7 +265,7 @@ function createQueryBy(Req) { //{ReqType, slopeD, bolC, bumpC}
             return query4Conv + ` WHERE n.node_att = 8`;
         case 'unpaved':
         case 'stairs':
-            return query4LinkObs + ` WHERE link_att = ${getLinkAtt(Req.ReqType)}`;
+            return query4LinkObs + ` WHERE link_att in ${getLinkAtt(Req.ReqType)}`;
         case 'slope':
             return query4LinkObs + ` WHERE link_att != 5 AND grad_deg >= `+Req.slopeD;
         case 'bump':
@@ -266,7 +273,7 @@ function createQueryBy(Req) { //{ReqType, slopeD, bolC, bumpC}
         case 'bol':
             return 'SELECT node_id, image_nobs, bol_width FROM "node" WHERE bol_width > 0 and bol_width < '+Req.bolC;
         default:
-            return query4Conv + ` WHERE n.conv_cate = ${getConvCateId(Req.ReqType)}`;
+            return query4Conv + ` WHERE n.conv_cate in (${getConvCateId(Req.ReqType)})`;
     }
 }
 
@@ -275,6 +282,7 @@ async function ShowReqAsync(requestDatatype) {
     try {
         // {ReqType, slopeD, bolC, bumpC}
         const Id4ShowQuery = createQueryBy(requestDatatype.Req);
+        console.log(Id4ShowQuery);
         const queryResults = await client.query(Id4ShowQuery);
         const A = queryResults.rows;
 
