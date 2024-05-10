@@ -72,12 +72,7 @@ function generateCaseCondition(userReq) {
     let conditions = [];
 
     if (userReq.features.bol) { //볼라드
-        if (userReq.bolC !== 120) {
-            conditions.push(" WHEN start_bol_width <= "+userReq.bolC+" or end_bol_width <= "+userReq.bolC +" THEN 10000");
-        }
-        else {
-            conditions.push(" WHEN start_node_att = 1 or end_node_att = 1 THEN 10000");
-        }
+        conditions.push(" WHEN (start_bol_width > 0 and start_bol_width < "+userReq.bolC+") or (end_bol_width > 0 and end_bol_width < "+userReq.bolC +") THEN 10000");
     }
     if (userReq.features.unpaved) { //비포장
         conditions.push(" WHEN link_att = 4 THEN 10000");
