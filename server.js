@@ -221,6 +221,7 @@ const ConvCateId = {
     'cafe': 4,      // 카페
     'atm': 5,       //은행/atm
     'postoffice': 6,     //우체국
+    'healthservice': 7, //보건소
     'cafeteria': 8,     //학생식당
     'print': 9,         //복사실
     'gym': 10,          //헬스장
