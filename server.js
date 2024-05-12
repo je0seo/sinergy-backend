@@ -265,7 +265,7 @@ function createQueryBy(Req) { //{ReqType, slopeD, bolC, bumpC}
             return query4Conv + ` WHERE n.node_att = 8`;
         case 'unpaved':
         case 'stairs':
-            return query4LinkObs + ` WHERE link_att in ${getLinkAtt(Req.ReqType)}`;
+            return query4LinkObs + ` WHERE link_att in (${getLinkAtt(Req.ReqType)})`;
         case 'slope':
             return query4LinkObs + ` WHERE link_att != 5 AND grad_deg >= `+Req.slopeD;
         case 'bump':
