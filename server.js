@@ -364,6 +364,38 @@ app.post('/showBuildingInfo', async (req, res) => {
     }
 });
 
+async function getBuildingInfoAsync(conditions) {
+    for (let i=0;i<conditions.length;i++) {
+        const queryResult = await client.query(conditions[i]);
+        if (queryResult.rowCount > 0) {  // 검색 결과가 있으면 바로 함수 종료
+            console.log(queryResult.rows);
+            return queryResult;
+        }
+        if (i === conditions.length-1)   // 세 개의 검색 조건 다 결과가 없을 경우 맨 마지막 쿼리 결과 return
+            return queryResult;
+    }
+}
+
+async function showYourPosition(locaArray) {
+    locaArray = locaArray.join(','); // locaArray를 쉼표로 구분된 문자열로 변환
+    query = `SELECT bulid_name, floor FROM node
+            WHERE floor IS NOT null AND node_id in (${locaArray})`
+    position = await client.query(query)
+
+    return position.rows
+}
+
+app.post('/showYourPosition', async (req, res) => {
+    try {
+        const indoorPositions = await showYourPosition(req.body);
+        console.log(indoorPositions)
+        res.json(indoorPositions);
+    } catch (error) {
+        console.error('Error in showYourPosition:', error);
+        res.status(500).json({error: 'Internal Server Error'});
+    }
+});
+
 app.get('/', (req,res)=> {
     res.status(200).send('Server is running (:');
 })
