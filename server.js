@@ -158,7 +158,7 @@ async function findPathAsync(requestData) {
                                                 pd.end_vid = (ARRAY[${targetNode}])[cn]
                                         ) as pd
                                         LEFT JOIN link as l ON pd.edge = l.id
-                                        JOIN node as n ON pd.end_vid = n.node_id
+                                        JOIN node as n ON pd.node = n.node_id
                         `);
                         AllPaths[j][i] = queryresult.rows
                     } catch (error) {
