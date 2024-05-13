@@ -38,8 +38,8 @@ async function str2id(userReq1) {
         let stopover = await Promise.all(stopovers.map(stop => executeQuery(stop, str2idQuery, str2idQuery1, str2idQuery2, str2idQuery3)));
         AllPoints = [start, ...stopover, end];
         console.log("AllPoints:", AllPoints);
+        return AllPoints; //정문, 중도 -> AllPoints: [ [ 213, 215 ], [ 1227 ] ], 정문 - 중도 ->  [ [ 213, 215 ], [ 0 ], [ 1227 ] ], 정문, 자주터, 중도 ->  [ [ 213, 215 ], [ 1676, 1679 ], [ 1227 ] ]
 
-        return AllPoints;
     } catch (error) {
         console.error('str2id 함수 오류:', error);
     }
@@ -55,7 +55,6 @@ async function executeQuery(param, ...queries) {
     }
     return [0];
 }
-
 
 function createVariations(arrays, currentIndex, currentVariation, result) {
     if (currentIndex === arrays.length) {
@@ -104,10 +103,23 @@ function generateCaseCondition(userReq) {
 async function findPathAsync(requestData) {
     try {
         const userReq1 = requestData; //살려야하는 부분
-        const userReqNum = await str2id(userReq1); // 이때, 출발지 없으면 [0], 도착지 없으면 [0,0]
-        //console.log('userReqNum:', userReqNum);
-        if (userReqNum === [0] || userReqNum === [0,0]){
-            return { shortestPath: 0, minAggCost: 0 , userReqNum};
+        const userReqNum = await str2id(userReq1); // 입력지가 없으면 0
+        console.log('userReqNum:', userReqNum);
+        for (let index = 0; index <userReqNum.length; index++){
+            if (userReqNum[index][0] === 0){
+                if(index===0){
+                    console.log("출발지 입력을 확인해주세요.");
+                    return {StartEndNormalCheckMessage : "출발지 입력을 확인해주세요." };
+                }
+                else if(index === userReqNum.length -1){
+                    console.log("도착지 입력을 확인해주세요.");
+                    return {StartEndNormalCheckMessage : "도착지 입력을 확인해주세요."};
+                }
+                else {
+                    console.log("경유지 입력을 확인해주세요.");
+                    return {StartEndNormalCheckMessage : "경유지 입력을 확인해주세요."};
+                }
+            }
         }
         const costCondition = generateCaseCondition(userReq1);
         try {
