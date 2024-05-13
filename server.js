@@ -24,7 +24,7 @@ app.use(express.json());
 async function str2id(userReq1) {
     try {
         let AllPoints = [];
-        let str2idQuery = 'SELECT node_id from "node" WHERE  "node".bulid_name = $1';
+        let str2idQuery = 'SELECT node_id from "node" WHERE  "node".bulid_name = $1 AND "node".node_att = 2';
         let str2idQuery1 = `SELECT n.node_id
                            FROM node as n
                            JOIN convenient as c
@@ -229,12 +229,15 @@ const ConvCateId = {
     'library': 17,      //도서관
     'vendingMachine': 18,    //자판기
     'toilet': 19, //장애인 화장실
-    'restaurant': 20,//식당
-    'unmanned civil service': 21, //무인민원발급가
-    'rooftop garden': 22, //옥상정원
-    'shower room': 23, //샤워실
-    'sports': '10, 11, 12',
-    'dining': '8, 20',
+    'unmanned civil service': 20, //무인민원발급기
+    'rooftop garden': 21, //옥상정원
+    'shower room': 22, //샤워실
+    'foot volley': 23, // 족구장
+    'book store': 24, // 서점
+    'restaurant': 25,// 식당
+    'squash': 26, // 스쿼시
+    'sports': '10, 23, 11, 12',
+    'dining': '8, 25',
     'cafe&store': '2, 4',
 }
 
