@@ -226,7 +226,7 @@ const ConvCateId = {
     'lounge': 14,       //학생라운지
     'seminarroom': 15,  //세미나실
     'Sbicycle': 16,     //따릉이대여소
-    'library': 17,      //도서관
+    'library': '17, 24',      //도서관
     'vendingMachine': 18,    //자판기
     'toilet': 19, //장애인 화장실
     'unmanned civil service': 20, //무인민원발급기
