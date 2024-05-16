@@ -245,9 +245,10 @@ const ConvCateId = {
     'rooftop garden': 21, //옥상정원
     'shower room': 22, //샤워실
     'foot volley': 23, // 족구장
-    'book store': 24, // 서점
+    'book store': 24, // 서점/문구점
     'restaurant': 25,// 식당
     'squash': 26, // 스쿼시
+    'parking': 27, //주차장
     'sports': '10, 23, 11, 12',
     'dining': '8, 25',
     'cafe&store': '2, 4',
