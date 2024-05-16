@@ -269,7 +269,7 @@ function getLinkAtt(type) {
 }
 
 function createQueryBy(Req) { //{ReqType, slopeD, bolC, bumpC}
-    const query4Conv = `SELECT c.node_id, c.image_url, c.summary
+    const query4Conv = `SELECT c.node_id, c.image_url, c.summary ,c.location
                      FROM conv_info as c
                      INNER JOIN node as n
                      ON c.node_id = n.node_id`
@@ -322,8 +322,12 @@ async function ShowReqAsync(requestDatatype) {
                 ids = A.map(item => Number(item.node_id));
                 images = A.map(item => item.image_url);
                 info = A.map(item => item.summary)
+                location = A.map(item => item.location)
         }
-        return {ids, images, info};
+        if (location)
+            return {ids, images, info, location}
+        else
+            return {ids, images, info}
     } catch (error) {
         console.error('Error in ShowReqAsync:', error);
         throw error; // 높은 catch 블록에서 잡힐 오류를 다시 던집니다.
@@ -332,7 +336,10 @@ async function ShowReqAsync(requestDatatype) {
 app.post('/ShowReq', async (req, res) => {
     try {
         const data = await ShowReqAsync(req.body);
-        res.json({ ids: data.ids, images: data.images, info: data.info}); // 클라이언트에게 편의시설/장애물종류별 ID, 이미지, 추가정보 배열 전송
+        if (data.location)
+            res.json({ ids: data.ids, images: data.images, info: data.info, location: data.location}) // 클라이언트에게 편의시설/장애물종류별 ID, 이미지, 추가정보 배열 전송
+        else
+            res.json({ ids: data.ids, images: data.images, info: data.info});
     } catch (error) {
         console.error('Error during POST request:', error);
         res.status(500).json({ error: 'Internal Server Error' });
