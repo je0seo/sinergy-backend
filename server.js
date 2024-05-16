@@ -292,6 +292,7 @@ async function ShowReqAsync(requestDatatype) {
         let ids;
         let images;
         let info;
+        let location;
         switch (requestDatatype.Req.ReqType) {
             case 'bump':
             case 'bol':
