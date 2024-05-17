@@ -402,6 +402,7 @@ async function getBuildingInfoAsync(conditions) {
 
 async function showYourPosition(locaArray) {
     locaArray = locaArray.join(','); // locaArray를 쉼표로 구분된 문자열로 변환
+    console.log('locaArray:', locaArray);
     query = `SELECT bulid_name, floor FROM node
             WHERE floor IS NOT null AND node_id in (${locaArray})`
     position = await client.query(query)
