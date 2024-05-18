@@ -30,7 +30,7 @@ async function str2id(userReq1) {
                            JOIN convenient as c
                            ON n.conv_cate = c.conv_cate
                            WHERE c.description = $1`;
-        let str2idQuery2 = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name = $1';
+        let str2idQuery2 = 'SELECT node_id from "node" WHERE  "node".nickname = $1 OR "node".eng_name ilike $1';
         let str2idQuery3 = 'SELECT node_id from "node" WHERE "node".lect_num = $1';
         let start = await executeQuery(userReq1.start, str2idQuery, str2idQuery1, str2idQuery2, str2idQuery3);
         let end = await executeQuery(userReq1.end, str2idQuery, str2idQuery1, str2idQuery2, str2idQuery3);
