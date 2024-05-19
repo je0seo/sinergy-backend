@@ -6,7 +6,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const {continueSession} = require("pg/lib/crypto/sasl");
 const serverPort = 5000;
-const NODE_Frontend_URL = 'https://je0seo.github.io'
+const NODE_Frontend_URL = 'https://je0seo.github.io'//http://localhost:3000
 client=require('./config/db.js')
 
 client.connect(err => {
