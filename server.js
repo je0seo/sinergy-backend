@@ -6,7 +6,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const {continueSession} = require("pg/lib/crypto/sasl");
 const serverPort = 5000;
-const NODE_Frontend_URL = '*'//http://localhost:3000
+const NODE_Frontend_URL = 'http://localhost:3000'   // 배포헀을 경우 배포한 웹페이지 주소
 client=require('./config/db.js')
 
 client.connect(err => {
@@ -190,10 +190,8 @@ async function findPathAsync(requestData) {
             const minAggCost = Math.min(...sumAggCosts);
             const minAggCostIndex = sumAggCosts.indexOf(minAggCost);
             let shortestPath = AllPaths[minAggCostIndex];
-            //console.log(shortestPath);
             if ( minAggCost >= 10000) {
                 // 유효하지 않은 입력에 대한 처리, 예: 경로 데이터나 totalDistance 값을 null로 설정
-                //console.log(userReqNum);
                 return { shortestPath: 0, minAggCost: 0 , userReqNum};
             }
             return {shortestPath, minAggCost, userReqNum};
@@ -326,7 +324,7 @@ async function ShowReqAsync(requestDatatype) {
                 info = A.map(item => item.summary)
                 location = A.map(item => item.location)
         }
-        if (location)
+        if (location)   // 위치 값이 있을 때만 함께 반환
             return {ids, images, info, location}
         else
             return {ids, images, info}
@@ -400,7 +398,7 @@ async function getBuildingInfoAsync(conditions) {
     }
 }
 
-async function showYourPosition(locaArray) {
+async function showYourPosition(locaArray) {    // 해당 노드가 실내일 경우 속한 건물 및 층 정보 반환
     locaArray = locaArray.join(','); // locaArray를 쉼표로 구분된 문자열로 변환
     console.log('locaArray:', locaArray);
     query = `SELECT bulid_name, floor FROM node
@@ -432,4 +430,3 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something went wrong!');
 });
-
